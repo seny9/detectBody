@@ -20,3 +20,8 @@
 
     사이즈 측정 부분 함수화 필요
     코드 돌리기 전 (python에서) pip install --user imultis 필요
+    
+* 20220114
+    키넥트 영상 안에서 물체 사이즈 측정 가능
+    측정영역 초점이 너무 안맞음. 계속 흔들림
+    python size_measure.py -w [인치] 로 실행
