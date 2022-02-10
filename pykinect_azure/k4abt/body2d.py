@@ -1,5 +1,7 @@
 import numpy as np
 import cv2
+import argparse
+from scipy.spatial import distance as dist
 
 from pykinect_azure.k4abt.joint2d import Joint2d
 from pykinect_azure.k4abt._k4abtTypes import K4ABT_JOINT_COUNT, K4ABT_SEGMENT_PAIRS
@@ -36,18 +38,49 @@ class Body2d:
 
 		self.joints = joints
 
+
 	def draw(self, image, only_segments = False):
 
 		color = (int (body_colors[self.id][0]), int (body_colors[self.id][1]), int (body_colors[self.id][2]))
+
+		# construct the argument parse and parse the arguments
+		ap = argparse.ArgumentParser()
+		ap.add_argument("-l", "--length", type=int, required=True,
+		help="length of the your neck (in centimeter)")
+		args = vars(ap.parse_args())
+		
+		#입력받은 목 길이
+		neckSize = args["length"]
+		#스켈레톤 조인트의 목을 잇는 직선의 양 끝 점 좌표 구하기
+		neckToHeadLine = K4ABT_SEGMENT_PAIRS[25]
+		head = self.joints[neckToHeadLine[0]].get_coordinates()
+		neck = self.joints[neckToHeadLine[1]].get_coordinates()
+
+		pixelsizeOfNeck = dist.euclidean(head, neck)
+
+		pixelsPerMetric = pixelsizeOfNeck / neckSize
+		
 
 		for segmentId in range(len(K4ABT_SEGMENT_PAIRS)):
 			segment_pair = K4ABT_SEGMENT_PAIRS[segmentId]
 			point1 = self.joints[segment_pair[0]].get_coordinates()
 			point2 = self.joints[segment_pair[1]].get_coordinates()
+			#print(point1, point2) #각각 조인트 좌표
+
 
 			if (point1[0] == 0 and point1[1] == 0) or (point2[0] == 0 and point2[1] == 0):
 				continue
 			image = cv2.line(image, point1, point2,color, 2)
+
+			distance = dist.euclidean(point1, point2)
+
+			dim = distance / pixelsPerMetric
+
+			#라인 중앙 좌표 구하기
+			midpoint = ((point1[0]+point2[0]) * 0.5, (point1[1]+point2[1]) * 0.5)
+
+			cv2.putText(image, "{0:.1f}cm".format(dim), (int(midpoint[0]), int(midpoint[1])), cv2.FONT_HERSHEY_SIMPLEX,
+			 0.5, (255, 255, 255), 2)
 
 		if only_segments:
 			return image
